@@ -59,13 +59,11 @@ export default function DebtDetails() {
   const { data: debt, isLoading, isError: isDebtError } = useQuery({
     queryKey: ['debt', debtId],
     queryFn: async () => {
-      if (!user) return null;
       const debts = await base44.entities.Debt.list();
       const foundDebt = debts.find(d => d.id === debtId);
       
       if (!foundDebt) {
-        navigate(createPageUrl('Dashboard'));
-        return null;
+        throw new Error('debt_not_found');
       }
       
       const hasAccess = 
@@ -74,20 +72,18 @@ export default function DebtDetails() {
         user.sharedAccountsWith?.includes(foundDebt.created_by);
       
       if (!hasAccess) {
-        navigate(createPageUrl('Dashboard'));
-        return null;
+        throw new Error('no_access');
       }
       
       return foundDebt;
     },
     enabled: !!debtId && !!user,
-    retry: 2
+    retry: 1
   });
 
-  const { data: payments = [], isError: isPaymentsError } = useQuery({
+  const { data: payments = [] } = useQuery({
     queryKey: ['payments', debtId],
     queryFn: async () => {
-      if (!user || !debt) return [];
       const allPayments = await base44.entities.Payment.list('-date');
       return allPayments.filter(p => p.debtId === debtId);
     },
@@ -95,10 +91,9 @@ export default function DebtDetails() {
     retry: 2
   });
 
-  const { data: increases = [], isError: isIncreasesError } = useQuery({
+  const { data: increases = [] } = useQuery({
     queryKey: ['increases', debtId],
     queryFn: async () => {
-      if (!user || !debt) return [];
       const allIncreases = await base44.entities.DebtIncrease.list('-date');
       return allIncreases.filter(i => i.debtId === debtId);
     },
