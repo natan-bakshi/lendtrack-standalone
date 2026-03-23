@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -8,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowRight, Save, Trash2, Edit, Wallet } from "lucide-react";
+import { ArrowRight, Save, Trash2, Edit, Wallet, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function ManageDebts() {
@@ -36,14 +35,15 @@ export default function ManageDebts() {
     loadUser();
   }, []);
 
-  const { data: debts = [] } = useQuery({
+  const { data: debts = [], isLoading: isDebtsLoading, isError: isDebtsError } = useQuery({
     queryKey: ['debts'],
     queryFn: async () => {
       if (!user) return [];
       const allDebts = await base44.entities.Debt.list('-created_date');
       return allDebts.filter(debt => debt.created_by === user.email);
     },
-    enabled: !!user
+    enabled: !!user,
+    retry: 2
   });
 
   useEffect(() => {
@@ -145,8 +145,31 @@ export default function ManageDebts() {
     }
   };
 
-  if (!user) {
-    return null;
+  if (!user || isDebtsLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+        <Loader2 className="w-12 h-12 animate-spin text-purple-600" />
+      </div>
+    );
+  }
+
+  if (isDebtsError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+        <div className="text-center p-8">
+          <p className="text-red-600 text-lg font-semibold mb-4">שגיאה בטעינת הנתונים</p>
+          <p className="text-gray-500 mb-6">לא הצלחנו לטעון את ההלוואות. נסה שוב.</p>
+          <div className="flex gap-3 justify-center">
+            <Button onClick={() => window.location.reload()} className="bg-gradient-to-l from-purple-600 to-pink-600">
+              נסה שוב
+            </Button>
+            <Button variant="outline" onClick={() => navigate(createPageUrl('Dashboard'))}>
+              חזרה לדף הבית
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (

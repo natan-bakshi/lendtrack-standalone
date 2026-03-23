@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -57,7 +56,7 @@ export default function DebtDetails() {
     };
   }, []);
 
-  const { data: debt, isLoading } = useQuery({
+  const { data: debt, isLoading, isError: isDebtError } = useQuery({
     queryKey: ['debt', debtId],
     queryFn: async () => {
       if (!user) return null;
@@ -81,27 +80,30 @@ export default function DebtDetails() {
       
       return foundDebt;
     },
-    enabled: !!debtId && !!user
+    enabled: !!debtId && !!user,
+    retry: 2
   });
 
-  const { data: payments = [] } = useQuery({
+  const { data: payments = [], isError: isPaymentsError } = useQuery({
     queryKey: ['payments', debtId],
     queryFn: async () => {
       if (!user || !debt) return [];
       const allPayments = await base44.entities.Payment.list('-date');
       return allPayments.filter(p => p.debtId === debtId);
     },
-    enabled: !!debtId && !!user && !!debt
+    enabled: !!debtId && !!user && !!debt,
+    retry: 2
   });
 
-  const { data: increases = [] } = useQuery({
+  const { data: increases = [], isError: isIncreasesError } = useQuery({
     queryKey: ['increases', debtId],
     queryFn: async () => {
       if (!user || !debt) return [];
       const allIncreases = await base44.entities.DebtIncrease.list('-date');
       return allIncreases.filter(i => i.debtId === debtId);
     },
-    enabled: !!debtId && !!user && !!debt
+    enabled: !!debtId && !!user && !!debt,
+    retry: 2
   });
 
   const addPaymentMutation = useMutation({
@@ -293,6 +295,25 @@ export default function DebtDetails() {
       return endDate && endDate < today;
     });
   };
+
+  if (isDebtError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+        <div className="text-center p-8">
+          <p className="text-red-600 text-lg font-semibold mb-4">שגיאה בטעינת הנתונים</p>
+          <p className="text-gray-500 mb-6">לא הצלחנו לטעון את פרטי ההלוואה. נסה שוב.</p>
+          <div className="flex gap-3 justify-center">
+            <Button onClick={() => window.location.reload()} className="bg-gradient-to-l from-purple-600 to-pink-600">
+              נסה שוב
+            </Button>
+            <Button variant="outline" onClick={() => navigate(createPageUrl('Dashboard'))}>
+              חזרה לדף הבית
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading || !debt || !user) {
     return (
