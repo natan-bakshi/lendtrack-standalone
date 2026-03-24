@@ -1,14 +1,22 @@
-import { createClient } from '@base44/sdk';
-import { appParams } from '@/lib/app-params';
+// Stub — base44 SDK removed. Replace with your own backend/auth.
 
-const { appId, token, functionsVersion, appBaseUrl } = appParams;
+export const base44 = {
+  auth: {
+    getUser: async () => null,
+    onAuthStateChanged: (_cb) => () => {},
+    signInWithGoogle: async () => {},
+    signOut: async () => {},
+  },
+};
 
-//Create a client with authentication required
-export const base44 = createClient({
-  appId,
-  token,
-  functionsVersion,
-  serverUrl: '',
-  requiresAuth: false,
-  appBaseUrl
+const makeEntity = (name) => ({
+  list: async () => [],
+  create: async (data) => ({ ...data, id: crypto.randomUUID(), created_date: new Date().toISOString() }),
+  update: async (id, data) => ({ ...data, id }),
+  delete: async (_id) => {},
+  filter: async () => [],
+  get: async (_id) => null,
 });
+
+export const Debt = makeEntity('Debt');
+export const Payment = makeEntity('Payment');
