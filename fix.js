@@ -1,1 +1,0 @@
-const fs = require('fs'); const pkg = JSON.parse(fs.readFileSync('package.json','utf8')); delete pkg.dependencies['@base44/sdk']; if(pkg.devDependencies) delete pkg.devDependencies['@base44/vite-plugin']; fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2)); console.log('done');  
